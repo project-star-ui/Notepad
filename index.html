@@ -32,6 +32,39 @@
         #wordCount {
             transition: all 0.3s ease;
         }
+        /* Styles for auth forms */
+        .auth-container {
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+        .dark .auth-container {
+            background-color: #1f2937; /* gray-800 */
+        }
+        .auth-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 6px;
+            background-color: white;
+            color: #1f2937; /* gray-800 */
+        }
+        .dark .auth-input {
+            border-color: #4b5563; /* gray-600 */
+            background-color: #374151; /* gray-700 */
+            color: #e5e7eb; /* gray-200 */
+        }
+        .auth-button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-300 min-h-screen">
@@ -43,58 +76,78 @@
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Web Notepad</h1>
             </div>
             <div class="flex items-center space-x-4">
+                <span id="userEmailDisplay" class="text-gray-700 dark:text-gray-300 text-sm hidden"></span>
+                <button id="logoutBtn" class="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors duration-300 hidden">
+                    Logout
+                </button>
                 <!-- Theme toggle -->
                 <button id="themeToggle" class="relative inline-flex items-center w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-700 focus:outline-none">
                     <span class="sr-only">Toggle dark mode</span>
                     <span class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200"></span>
                 </button>
-                <button id="saveBtn" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-300">
-                    Save Note
-                </button>
             </div>
         </header>
 
-        <!-- Main content -->
-        <div class="mb-4 flex justify-between items-center">
-            <input type="text" id="noteTitle" placeholder="Note title..." class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <!-- Authentication Forms -->
+        <div id="authSection" class="auth-container text-gray-800 dark:text-gray-200">
+            <h2 id="authTitle" class="text-xl font-bold mb-4 text-center">Login</h2>
+            <input type="email" id="authEmail" placeholder="Email" class="auth-input focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="authPassword" placeholder="Password" class="auth-input focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button id="authSubmitBtn" class="auth-button bg-blue-500 hover:bg-blue-600 text-white">Login</button>
+            <p class="text-center mt-4 text-sm">
+                <span id="toggleAuthModeText">Don't have an account?</span>
+                <button id="toggleAuthModeBtn" class="text-blue-500 hover:underline ml-1">Sign Up</button>
+            </p>
+            <p id="authError" class="text-red-500 text-sm mt-2 text-center hidden"></p>
         </div>
 
-        <textarea id="noteContent" class="note-area w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type your thoughts here..."></textarea>
-
-        <div class="mt-4 flex justify-between items-center">
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-                <span id="wordCount">0</span> words
+        <!-- Main Notepad Content (hidden until authenticated) -->
+        <div id="notepadContent" class="hidden">
+            <div class="mb-4 flex justify-between items-center">
+                <input type="text" id="noteTitle" placeholder="Note title..." class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <div class="flex space-x-2">
-                <button id="clearBtn" class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded transition-colors duration-300">
-                    Clear
-                </button>
-                <button id="loadBtn" class="px-3 py-1 text-sm bg-green-500 hover:bg-green-600 text-white rounded transition-colors duration-300">
-                    Load
-                </button>
-            </div>
-        </div>
 
-        <!-- Recent notes list (hidden by default) -->
-        <div id="notesList" class="mt-6 hidden">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Recent Notes</h2>
-            <div id="notesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <!-- Notes will be populated here -->
+            <textarea id="noteContent" class="note-area w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type your thoughts here..."></textarea>
+
+            <div class="mt-4 flex justify-between items-center">
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                    <span id="wordCount">0</span> words
+                </div>
+                <div class="flex space-x-2">
+                    <button id="clearBtn" class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded transition-colors duration-300">
+                        Clear
+                    </button>
+                    <button id="saveBtn" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-300">
+                        Save Note
+                    </button>
+                    <button id="loadBtn" class="px-3 py-1 text-sm bg-green-500 hover:bg-green-600 text-white rounded transition-colors duration-300">
+                        Load
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent notes list (hidden by default) -->
+            <div id="notesList" class="mt-6 hidden">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Recent Notes</h2>
+                <div id="notesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Notes will be populated here -->
+                </div>
             </div>
         </div>
     </div>
 
     <script type="module">
-        // Import the functions you need from the SDKs you need
+        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCykcTfxFEJSuFtrhSOnHcARfZvakWyKiU",
             authDomain: "students-expenses-tracker.firebaseapp.com",
             projectId: "students-expenses-tracker",
-            databaseURL: "https://students-expenses-tracker-default-rtdb.firebaseio.com/", // Corrected databaseURL
+            databaseURL: "https://students-expenses-tracker-default-rtdb.firebaseio.com/",
             storageBucket: "students-expenses-tracker.firebasestorage.app",
             messagingSenderId: "544624109154",
             appId: "1:544624109154:web:a1e2e0d3041e968710133b"
@@ -103,7 +156,9 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-        const notesRef = ref(database, 'notes'); // Reference to the 'notes' collection in your database
+        const auth = getAuth(app);
+
+        let currentUser = null; // To store the currently logged-in user
 
         // DOM Elements
         const themeToggle = document.getElementById('themeToggle');
@@ -116,13 +171,27 @@
         const notesList = document.getElementById('notesList');
         const notesContainer = document.getElementById('notesContainer');
 
-        // Check current theme
+        // Auth DOM Elements
+        const authSection = document.getElementById('authSection');
+        const authTitle = document.getElementById('authTitle');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const toggleAuthModeText = document.getElementById('toggleAuthModeText');
+        const toggleAuthModeBtn = document.getElementById('toggleAuthModeBtn');
+        const authError = document.getElementById('authError');
+        const notepadContent = document.getElementById('notepadContent');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userEmailDisplay = document.getElementById('userEmailDisplay');
+
+        let isLoginMode = true; // State for login/signup toggle
+
+        // --- Theme Management (unchanged) ---
         function getTheme() {
             return localStorage.getItem('theme') || 
                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         }
 
-        // Apply theme
         function setTheme(theme) {
             document.documentElement.classList.toggle('dark', theme === 'dark');
             const toggleDot = themeToggle.querySelector('span:not(.sr-only)');
@@ -130,24 +199,142 @@
                 toggleDot.style.transform = theme === 'dark' ? 'translateX(calc(100% - 1rem))' : 'translateX(0.25rem)';
             }
         }
-
-        // Initialize theme
         setTheme(getTheme());
-
-        // Theme toggle handler
         themeToggle.addEventListener('click', () => {
             const newTheme = getTheme() === 'dark' ? 'light' : 'dark';
             localStorage.setItem('theme', newTheme);
             setTheme(newTheme);
         });
-
-        // Listen for system theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
             if (!localStorage.getItem('theme')) {
                 setTheme(e.matches ? 'dark' : 'light');
             }
         });
-        
+        // --- End Theme Management ---
+
+        // --- Authentication Logic ---
+        toggleAuthModeBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            authTitle.textContent = isLoginMode ? 'Login' : 'Sign Up';
+            authSubmitBtn.textContent = isLoginMode ? 'Login' : 'Sign Up';
+            toggleAuthModeText.textContent = isLoginMode ? "Don't have an account?" : "Already have an account?";
+            toggleAuthModeBtn.textContent = isLoginMode ? 'Sign Up' : 'Login';
+            authError.classList.add('hidden'); // Clear error on mode switch
+        });
+
+        authSubmitBtn.addEventListener('click', async () => {
+            const email = authEmail.value;
+            const password = authPassword.value;
+            authError.classList.add('hidden'); // Hide previous errors
+
+            if (!email || !password) {
+                authError.textContent = 'Please enter email and password.';
+                authError.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                let errorMessage = "An unknown error occurred.";
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'User account has been disabled.';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMessage = 'No user found with this email.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Incorrect password.';
+                        break;
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'This email is already in use.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Password should be at least 6 characters.';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                authError.textContent = errorMessage;
+                authError.classList.remove('hidden');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout error:", error);
+                alert("Failed to log out. Please try again.");
+            }
+        });
+
+        // Listen for authentication state changes
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                // User is signed in
+                authSection.classList.add('hidden');
+                notepadContent.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+                userEmailDisplay.textContent = user.email;
+                userEmailDisplay.classList.remove('hidden');
+                
+                // Clear current note fields when a new user logs in or logs out
+                noteTitle.value = '';
+                noteContent.value = '';
+                wordCount.textContent = '0';
+                notesList.classList.add('hidden'); // Hide notes list initially
+
+                // Start listening for notes specific to this user
+                setupNotesListener(user.uid);
+
+            } else {
+                // User is signed out
+                authSection.classList.remove('hidden');
+                notepadContent.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+                userEmailDisplay.classList.add('hidden');
+                userEmailDisplay.textContent = '';
+
+                // Stop listening for notes (if any)
+                if (notesListenerUnsubscribe) {
+                    notesListenerUnsubscribe();
+                    notesListenerUnsubscribe = null;
+                }
+                notesContainer.innerHTML = ''; // Clear displayed notes
+            }
+        });
+
+        let notesListenerUnsubscribe = null; // To store the unsubscribe function for onValue
+
+        function setupNotesListener(uid) {
+            // If there's an existing listener, unsubscribe first
+            if (notesListenerUnsubscribe) {
+                notesListenerUnsubscribe();
+            }
+
+            const userNotesRef = ref(database, `users/${uid}/notes`);
+            notesListenerUnsubscribe = onValue(userNotesRef, (snapshot) => {
+                const data = snapshot.val();
+                renderNotesList(data);
+            }, (error) => {
+                console.error("Error fetching notes from Firebase:", error);
+                notesContainer.innerHTML = '<p class="text-red-500 dark:text-red-400">Error loading notes.</p>';
+            });
+        }
+        // --- End Authentication Logic ---
+
+        // --- Notepad Functionality (modified for Firebase and user-specific data) ---
         // Word counter
         noteContent.addEventListener('input', () => {
             const text = noteContent.value.trim();
@@ -166,6 +353,11 @@
 
         // Save note to Firebase
         saveBtn.addEventListener('click', async () => {
+            if (!currentUser) {
+                alert('Please log in to save notes.');
+                return;
+            }
+
             const title = noteTitle.value.trim() || 'Untitled Note ' + new Date().toLocaleString();
             const content = noteContent.value.trim();
             
@@ -182,19 +374,24 @@
             };
 
             try {
-                await push(notesRef, note); // Push new note to Firebase
+                const userNotesRef = ref(database, `users/${currentUser.uid}/notes`);
+                await push(userNotesRef, note); // Push new note to user's specific path
                 alert('Note saved successfully to Firebase!');
-                // No need to call renderNotesList() here, onValue will handle updates
+                // The onValue listener will automatically update the list
             } catch (error) {
                 console.error("Error saving note to Firebase:", error);
                 alert('Failed to save note to Firebase. Check console for details.');
             }
         });
 
-        // Load notes list from Firebase
+        // Load notes list
         loadBtn.addEventListener('click', () => {
+            if (!currentUser) {
+                alert('Please log in to load notes.');
+                return;
+            }
             notesList.classList.toggle('hidden');
-            // renderNotesList() will be called by onValue listener
+            // renderNotesList() is called by the onValue listener
         });
 
         // Render notes list from Firebase data
@@ -234,18 +431,7 @@
                 notesContainer.appendChild(noteElement);
             });
         }
-
-        // Listen for real-time updates from Firebase
-        onValue(notesRef, (snapshot) => {
-            const data = snapshot.val();
-            renderNotesList(data);
-        }, (error) => {
-            console.error("Error fetching notes from Firebase:", error);
-            notesContainer.innerHTML = '<p class="text-red-500 dark:text-red-400">Error loading notes.</p>';
-        });
-
-        // Initial load of notes when the page loads (if notesList is not hidden)
-        // This is handled by the onValue listener, which fires immediately.
+        // --- End Notepad Functionality ---
     </script>
 </body>
 </html>

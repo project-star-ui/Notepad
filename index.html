@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Notepad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        .note-area {
+            min-height: 70vh;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+        .dark .theme-toggle:after {
+            transform: translateX(24px);
+        }
+        #wordCount {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-300 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/73af3c69-0d05-47e5-a66f-026600663ab7.png" alt="Web Notepad logo - minimal notebook icon with pencil" class="mr-3 rounded-lg w-8 h-8" />
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Web Notepad</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- Theme toggle -->
+                <button id="themeToggle" class="relative inline-flex items-center w-12 h-6 rounded-full transition-colors bg-gray-300 dark:bg-gray-700 focus:outline-none">
+                    <span class="sr-only">Toggle dark mode</span>
+                    <span class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200"></span>
+                </button>
+                <button id="saveBtn" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-300">
+                    Save Note
+                </button>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <div class="mb-4 flex justify-between items-center">
+            <input type="text" id="noteTitle" placeholder="Note title..." class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <textarea id="noteContent" class="note-area w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type your thoughts here..."></textarea>
+
+        <div class="mt-4 flex justify-between items-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                <span id="wordCount">0</span> words
+            </div>
+            <div class="flex space-x-2">
+                <button id="clearBtn" class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded transition-colors duration-300">
+                    Clear
+                </button>
+                <button id="loadBtn" class="px-3 py-1 text-sm bg-green-500 hover:bg-green-600 text-white rounded transition-colors duration-300">
+                    Load
+                </button>
+            </div>
+        </div>
+
+        <!-- Recent notes list (hidden by default) -->
+        <div id="notesList" class="mt-6 hidden">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Recent Notes</h2>
+            <div id="notesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <!-- Notes will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCykcTfxFEJSuFtrhSOnHcARfZvakWyKiU",
+            authDomain: "students-expenses-tracker.firebaseapp.com",
+            projectId: "students-expenses-tracker",
+            databaseURL: "https://students-expenses-tracker-default-rtdb.firebaseio.com/", // Corrected databaseURL
+            storageBucket: "students-expenses-tracker.firebasestorage.app",
+            messagingSenderId: "544624109154",
+            appId: "1:544624109154:web:a1e2e0d3041e968710133b"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const notesRef = ref(database, 'notes'); // Reference to the 'notes' collection in your database
+
+        // DOM Elements
+        const themeToggle = document.getElementById('themeToggle');
+        const saveBtn = document.getElementById('saveBtn');
+        const loadBtn = document.getElementById('loadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const noteTitle = document.getElementById('noteTitle');
+        const noteContent = document.getElementById('noteContent');
+        const wordCount = document.getElementById('wordCount');
+        const notesList = document.getElementById('notesList');
+        const notesContainer = document.getElementById('notesContainer');
+
+        // Check current theme
+        function getTheme() {
+            return localStorage.getItem('theme') || 
+                   (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        }
+
+        // Apply theme
+        function setTheme(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            const toggleDot = themeToggle.querySelector('span:not(.sr-only)');
+            if (toggleDot) {
+                toggleDot.style.transform = theme === 'dark' ? 'translateX(calc(100% - 1rem))' : 'translateX(0.25rem)';
+            }
+        }
+
+        // Initialize theme
+        setTheme(getTheme());
+
+        // Theme toggle handler
+        themeToggle.addEventListener('click', () => {
+            const newTheme = getTheme() === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            setTheme(newTheme);
+        });
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+        
+        // Word counter
+        noteContent.addEventListener('input', () => {
+            const text = noteContent.value.trim();
+            const count = text ? text.split(/\s+/).length : 0;
+            wordCount.textContent = count;
+        });
+
+        // Clear note
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear this note?')) {
+                noteTitle.value = '';
+                noteContent.value = '';
+                wordCount.textContent = '0';
+            }
+        });
+
+        // Save note to Firebase
+        saveBtn.addEventListener('click', async () => {
+            const title = noteTitle.value.trim() || 'Untitled Note ' + new Date().toLocaleString();
+            const content = noteContent.value.trim();
+            
+            if (!content) {
+                alert('Note is empty!');
+                return;
+            }
+
+            const note = {
+                title,
+                content,
+                createdAt: new Date().toISOString(),
+                wordCount: content ? content.split(/\s+/).length : 0
+            };
+
+            try {
+                await push(notesRef, note); // Push new note to Firebase
+                alert('Note saved successfully to Firebase!');
+                // No need to call renderNotesList() here, onValue will handle updates
+            } catch (error) {
+                console.error("Error saving note to Firebase:", error);
+                alert('Failed to save note to Firebase. Check console for details.');
+            }
+        });
+
+        // Load notes list from Firebase
+        loadBtn.addEventListener('click', () => {
+            notesList.classList.toggle('hidden');
+            // renderNotesList() will be called by onValue listener
+        });
+
+        // Render notes list from Firebase data
+        function renderNotesList(notesData) {
+            notesContainer.innerHTML = '';
+            const notes = [];
+            if (notesData) {
+                // Convert Firebase object to array and sort by createdAt (newest first)
+                Object.keys(notesData).forEach(key => {
+                    notes.push({ id: key, ...notesData[key] });
+                });
+                notes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            }
+            
+            if (notes.length === 0) {
+                notesContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No notes saved yet.</p>';
+                return;
+            }
+
+            notes.forEach(note => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 cursor-pointer';
+                noteElement.innerHTML = `
+                    <h3 class="font-medium text-gray-800 dark:text-gray-200 truncate">${note.title}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">${note.content.substring(0, 50)}${note.content.length > 50 ? '...' : ''}</p>
+                    <div class="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        <span>${new Date(note.createdAt).toLocaleString()}</span>
+                        <span>${note.wordCount} words</span>
+                    </div>
+                `;
+                noteElement.addEventListener('click', () => {
+                    noteTitle.value = note.title;
+                    noteContent.value = note.content;
+                    wordCount.textContent = note.wordCount;
+                    notesList.classList.add('hidden');
+                });
+                notesContainer.appendChild(noteElement);
+            });
+        }
+
+        // Listen for real-time updates from Firebase
+        onValue(notesRef, (snapshot) => {
+            const data = snapshot.val();
+            renderNotesList(data);
+        }, (error) => {
+            console.error("Error fetching notes from Firebase:", error);
+            notesContainer.innerHTML = '<p class="text-red-500 dark:text-red-400">Error loading notes.</p>';
+        });
+
+        // Initial load of notes when the page loads (if notesList is not hidden)
+        // This is handled by the onValue listener, which fires immediately.
+    </script>
+</body>
+</html>
